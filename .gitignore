@@ -1,0 +1,16 @@
+# Environment
+.env
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Alembic migration files
+alembic/versions/*.py
+!alembic/versions/.gitkeep
+
+# Ignore celery beat file
+celerybeat-schedule

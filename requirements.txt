@@ -1,0 +1,90 @@
+fastapi
+uvicorn[standard]
+sqlalchemy[asyncio]
+asyncpg
+alembic
+pydantic
+pydantic-settings
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt==4.0.1
+python-multipart
+redis
+celery
+flower
+aiosmtplib
+strawberry-graphql[fastapi]
+authlib
+httpx
+python-dotenv
+Pillow
+email-validator
+itsdangerous
+
+
+
+
+
+# error/                                  ← root project folder
+# ├── .env
+# ├── .gitignore
+# ├── .gitattributes
+# ├── requirements.txt
+# ├── README.md
+# ├── alembic.ini
+# │
+# ├── alembic/
+# │   ├── env.py
+# │   └── versions/                       ← migration files yaha aayenge
+# │
+# ├── docker/                             ← Docker related configs
+# │
+# └── app/
+#     ├── main.py                         ← FastAPI app entrypoint, routers + graphql mount
+#     ├── dependencies.py                 ← get_current_user, require_role
+#     │
+#     ├── core/
+#     │   └── config.py                   ← Settings (.env loader)
+#     │
+#     ├── db/
+#     │   ├── base_class.py               ← Base (DeclarativeBase)
+#     │   └── session.py                  ← engine, AsyncSessionLocal, get_db
+#     │
+#     ├── mixins/
+#     │   ├── __init__.py
+#     │   ├── base_model_mixin.py         ← BaseModelMixin (id + all mixins combined)
+#     │   ├── audit_mixin.py              ← created_by / updated_by
+#     │   ├── time_mixin.py               ← created_at / updated_at
+#     │   └── soft_delete.py              ← soft delete field(s)
+#     │
+#     ├── models/
+#     │   ├── __init__.py
+#     │   ├── users.py                    ← User, RoleEnum
+#     │   ├── events.py                   ← Event, CategoryEnum, EventStatus
+#     │   └── bookings.py                 ← Booking, BookingStatus
+#     │
+#     ├── schemas/
+#     │   ├── __init__.py
+#     │   ├── users.py                    ← UserRegister, UserLogin, UserOut, Token
+#     │   ├── events.py                   ← EventCreate, EventUpdate, EventOut
+#     │   └── bookings.py                 ← BookingCreate, BookingOut
+#     │
+#     ├── routes/
+#     │   ├── __init__.py
+#     │   ├── auth.py                     ← register/login/google routes
+#     │   ├── events.py                   ← event routes
+#     │   ├── bookings.py                 ← booking routes
+#     │   └── admin.py                    ← [pending] admin user/stats routes
+#     │
+#     ├── graphql/  🚫🚫← [pending, abhi banana hai]
+#     │   ├── __init__.py
+#     │   ├── types.py                    ← EventType, UserType
+#     │   ├── converters.py               ← SQLAlchemy → Strawberry converters
+#     │   ├── queries.py                  ← Query class (event search/list)
+#     │   ├── mutations.py                ← (optional)
+#     │   └── schema.py                   ← final Strawberry schema
+#     │
+#     └── tasks/
+#         ├── __init__.py
+#         ├── celery_app.py               ← Celery instance + broker config
+#         └── email_tasks.py              ← send_booking_confirmation, send_cancellation_email
