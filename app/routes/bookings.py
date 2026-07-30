@@ -8,6 +8,7 @@ from app.moduels.event import Event, EventStatus
 from app.moduels.bookings import Booking, BookingStatus
 from app.tasks.email_tasks import send_booking_confirmation, send_cancellation_email
 from app.schemas.booking_schema import BookingCreate, BookingOut
+from app.core.redis_client import redis_client
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
@@ -33,6 +34,9 @@ async def create_booking(
     db.add(booking)
     await db.commit()
     await db.refresh(booking)
+
+
+    await redis_client.delete("trending_events")
 
     send_booking_confirmation.apply_async(args=[current_user.email, event.title])
     return booking
@@ -61,6 +65,9 @@ async def cancle_booking(
         event.available_seats += 1
 
     await db.commit()
+
+
+    await redis_client.delete("trending_events")
     send_cancellation_email.apply_async(args=[current_user.email, event.title if event else "the event"])
     return {"detail": "Booking cancelled"}
 

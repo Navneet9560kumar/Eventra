@@ -1,6 +1,8 @@
 import os
 import uuid
+import json
 from datetime import date
+
 
 from fastapi import (
     APIRouter,
@@ -20,9 +22,14 @@ from app.core.config import settings
 from app.moduels.user import User, RoleEnum
 from app.moduels.event import Event, CategoryEnum, EventStatus
 from app.schemas.event_schema import EventOut
+from app.core.redis_client import redis_client
 
 router = APIRouter(prefix="/events", tags=["events"])
 
+
+
+CACHE_KEY = "trending_events"
+CACHE_TTL = 60  # seconds
 
 # List Events
 
@@ -32,16 +39,35 @@ async def list_events(
     location: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
+    #sirf bina filter wali "trending" list cahe karo
+
+    if not category and not location:
+        cached =  await redis_client.get(CACHE_KEY)
+        if cached:
+            return json.loads(cached)
     query = select(Event).where(Event.status == EventStatus.active)
 
     if category:
         query = query.where(Event.category == category)
 
+    if location: 
+        query =query.where(Event.location.ilike(f"%{location}%"))
+
+    
     if location:
         query = query.where(Event.location.ilike(f"%{location}%"))
 
-    result = await db.execute(query)
-    return result.scalars().all()
+        result = await db.execute(query)
+        events = result.scalar().all()
+
+    if not category and not location:
+        serialized  = [EventOut.model_validate(e).model_dump
+        (mode="json") for e in events]
+        await redis_client.set(CACHE_KEY, json.dump(serialized),
+        ex = CACHE_TTL)
+
+
+
 
 
 # Get Single Event

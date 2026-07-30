@@ -1,3 +1,7 @@
+import os
+import uuid
+from fastapi import UploadFile, File
+
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -11,6 +15,8 @@ from app.core.config import settings
 from app.db.session import get_db
 from app.moduels.user import User, RoleEnum
 from app.schemas.users_schema import UserRegister, Userlogin, UserOut, Token
+from app.dependencies import get_current_user
+from app.core.config import settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -37,6 +43,26 @@ def create_access_token(user_id: int, role: str) -> str:
     expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {"sub": str(user_id), "role": role, "exp": expire}
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+
+@router.put("/me/profile-image", response_model=UserOut)
+async def uplode_profile_image(
+    image:UploadFile = File(...),
+    current_user:User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
+    filename = f"{uuid.uuid4()}_{image.filename}"
+    filepath = os.path.join(settings.MEDIA_ROOT, filename)
+
+    with open(filepath, "wb") as f:
+        f.write(await image.read())
+
+    current_user.profile_image_url = f"{settings.MEDIA_URL}/{filename}"
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user
 
 
 @router.post("/register", response_model=UserOut)
