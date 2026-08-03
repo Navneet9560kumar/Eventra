@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.dependencies import require_role
 from app.moduels.user import User, RoleEnum
-from app.moduels.event import Event, EventStatus
+from app.moduels.event import Event, EventStatus 
 from app.moduels.bookings import Booking, BookingStatus
 from app.schemas.users_schema import UserOut
 
