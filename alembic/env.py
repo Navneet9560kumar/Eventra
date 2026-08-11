@@ -7,11 +7,12 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 from app.core.config import settings
-# from app.db.base_class import Base          # tumhare actual Base wali file (db.py)
+
 from app.db.db import Base
 from app.moduels.user import User
 from app.moduels.event import Event
 from app.moduels.bookings import Booking
+from app.moduels.notification import Notification
 
 config = context.config
 

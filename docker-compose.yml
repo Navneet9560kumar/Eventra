@@ -51,6 +51,8 @@ services:
     restart: always
     entrypoint: []
     command: celery -A app.core.celery_app worker --loglevel=info
+    environment:
+      - C_FORCE_ROOT=true
     env_file:
       - .env
     volumes:
@@ -68,6 +70,8 @@ services:
     restart: always
     entrypoint: []
     command: celery -A app.core.celery_app beat --loglevel=info
+    environment:
+      - C_FORCE_ROOT=true
     env_file:
       - .env
     volumes:

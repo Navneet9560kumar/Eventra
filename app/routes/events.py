@@ -3,7 +3,6 @@ import uuid
 import json
 from datetime import date
 
-
 from fastapi import (
     APIRouter,
     Depends,
@@ -21,57 +20,53 @@ from app.dependencies import require_role
 from app.core.config import settings
 from app.moduels.user import User, RoleEnum
 from app.moduels.event import Event, CategoryEnum, EventStatus
+from app.moduels.notification import Notification  # Notification model imported
 from app.schemas.event_schema import EventOut
 from app.core.redis_client import redis_client
+from app.core.ws_manager import manager
+
 
 router = APIRouter(prefix="/events", tags=["events"])
-
-
 
 CACHE_KEY = "trending_events"
 CACHE_TTL = 60  # seconds
 
-# List Events
 
+# List Events
 @router.get("", response_model=list[EventOut])
 async def list_events(
     category: CategoryEnum | None = None,
     location: str | None = None,
     db: AsyncSession = Depends(get_db),
 ):
-    #sirf bina filter wali "trending" list cahe karo
-
     if not category and not location:
-        cached =  await redis_client.get(CACHE_KEY)
+        cached = await redis_client.get(CACHE_KEY)
         if cached:
             return json.loads(cached)
+
     query = select(Event).where(Event.status == EventStatus.active)
 
     if category:
         query = query.where(Event.category == category)
 
-    if location: 
-        query =query.where(Event.location.ilike(f"%{location}%"))
-
-    
     if location:
         query = query.where(Event.location.ilike(f"%{location}%"))
 
-        result = await db.execute(query)
-        events = result.scalar().all()
+    result = await db.execute(query)
+    events = result.scalars().all()
 
     if not category and not location:
-        serialized  = [EventOut.model_validate(e).model_dump
-        (mode="json") for e in events]
-        await redis_client.set(CACHE_KEY, json.dump(serialized),
-        ex = CACHE_TTL)
+        serialized = [
+            EventOut.model_validate(e).model_dump(mode="json") for e in events
+        ]
+        await redis_client.set(
+            CACHE_KEY, json.dumps(serialized), ex=CACHE_TTL
+        )
 
-
-
+    return events
 
 
 # Get Single Event
-
 @router.get("/{event_id}", response_model=EventOut)
 async def get_event(
     event_id: int,
@@ -87,7 +82,6 @@ async def get_event(
 
 
 # Create Event
-
 @router.post("", response_model=EventOut, status_code=status.HTTP_201_CREATED)
 async def create_event(
     title: str = Form(...),
@@ -132,22 +126,70 @@ async def create_event(
     await db.commit()
     await db.refresh(event)
 
+    # 1. Clear Redis cache for events
+    await redis_client.delete(CACHE_KEY)
+
+    # 2. Save Notifications to Database (Persistent Store)
+    notif_title = f"New event created: {event.title}"
+
+    # Fetch all admins to notify
+    admin_result = await db.execute(select(User).where(User.role == RoleEnum.admin))
+    admins = admin_result.scalars().all()
+
+    notifications_to_add = []
+    
+    # Notification entries for Admins
+    for admin in admins:
+        notifications_to_add.append(
+            Notification(
+                user_id=admin.id,
+                type="event_created",
+                title=notif_title,
+                event_id=event.id,
+            )
+        )
+
+    # Notification entry for the Event Organizer (Confirmation)
+    notifications_to_add.append(
+        Notification(
+            user_id=event.organizer_id,
+            type="event_created",
+            title=notif_title,
+            event_id=event.id,
+        )
+    )
+
+    db.add_all(notifications_to_add)
+    await db.commit()
+
+    # 3. Real-time Push via WebSockets
+    ws_message = {
+        "type": "event_created",
+        "event_id": event.id,
+        "title": event.title,
+        "organizer_id": event.organizer_id,
+    }
+    await manager.notify_admins(ws_message)
+    await manager.notify_organizer(event.organizer_id, ws_message)
+
     return event
 
 
 # Update Event
-
 @router.put("/{event_id}", response_model=EventOut)
 async def update_event(
     event_id: int,
     title: str | None = Form(None),
     description: str | None = Form(None),
     location: str | None = Form(None),
-    current_user: User = Depends(require_role(RoleEnum.organizer, RoleEnum.admin)),
+    current_user: User = Depends(
+        require_role(RoleEnum.organizer, RoleEnum.admin)
+    ),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(Event).where(Event.id == event_id))
     event = result.scalar_one_or_none()
+
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
@@ -164,11 +206,13 @@ async def update_event(
 
     await db.commit()
     await db.refresh(event)
+
+    await redis_client.delete(CACHE_KEY)
+
     return event
 
 
 # Delete (Cancel) Event
-
 @router.delete("/{event_id}")
 async def delete_event(
     event_id: int,
@@ -193,5 +237,6 @@ async def delete_event(
     event.updated_by_id = current_user.id
 
     await db.commit()
+    await redis_client.delete(CACHE_KEY)
 
     return {"detail": "Event cancelled successfully"}
