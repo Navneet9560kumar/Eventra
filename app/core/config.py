@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     # Media
     MEDIA_ROOT: str = "./media"
     MEDIA_URL: str = "/media"
+    PUBLIC_BASE_URL: str = "http://localhost:8000"
 
     model_config = SettingsConfigDict(
         env_file=".env",

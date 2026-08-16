@@ -107,7 +107,7 @@ async def create_event(
         with open(filepath, "wb") as f:
             f.write(await banner.read())
 
-        banner_url = f"{settings.MEDIA_URL}/{filename}"
+        banner_url = f"{settings.PUBLIC_BASE_URL}{settings.MEDIA_URL}/{filename}"
 
     event = Event(
         organizer_id=current_user.id,
@@ -138,16 +138,17 @@ async def create_event(
 
     notifications_to_add = []
     
-    # Notification entries for Admins
+    # Notification entries for Admins (skip organizer to avoid double notify)
     for admin in admins:
-        notifications_to_add.append(
-            Notification(
-                user_id=admin.id,
-                type="event_created",
-                title=notif_title,
-                event_id=event.id,
+        if admin.id != event.organizer_id:
+            notifications_to_add.append(
+                Notification(
+                    user_id=admin.id,
+                    type="event_created",
+                    title=notif_title,
+                    event_id=event.id,
+                )
             )
-        )
 
     # Notification entry for the Event Organizer (Confirmation)
     notifications_to_add.append(
@@ -158,7 +159,6 @@ async def create_event(
             event_id=event.id,
         )
     )
-
     db.add_all(notifications_to_add)
     await db.commit()
 

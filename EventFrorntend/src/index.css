@@ -1,0 +1,155 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #151225;
+  --color-paper: #FAF7F1;
+  --color-stub: #F1ECE0;
+  --color-violet: #5B3DF5;
+  --color-violet-dark: #4128C4;
+  --color-violet-light: #EDE9FE;
+  --color-amber: #F5A524;
+  --color-amber-dark: #C97F0F;
+  --color-confirmed: #1FAE7A;
+  --color-cancelled: #E15353;
+  --color-muted: #7A7488;
+
+  --font-display: "Bricolage Grotesque", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 150ms;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.btn-primary {
+  background-color: var(--color-ink);
+  color: var(--color-paper);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-violet);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--color-ink);
+  border: 1px solid rgb(21 18 37 / 0.15);
+}
+
+.btn-ghost:hover {
+  border-color: rgb(21 18 37 / 0.4);
+}
+
+.btn-amber {
+  background-color: var(--color-amber);
+  color: var(--color-ink);
+}
+
+.btn-amber:hover {
+  background-color: var(--color-amber-dark);
+}
+
+.btn-amber:active {
+  transform: scale(0.98);
+}
+
+.input {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(21 18 37 / 0.15);
+  background-color: rgb(255 255 255 / 0.7);
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  color: var(--color-ink);
+  transition: all 150ms;
+}
+
+.input::placeholder {
+  color: var(--color-muted);
+}
+
+.input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(91 61 245 / 0.5);
+  border-color: var(--color-violet);
+}
+
+.label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+  margin-bottom: 0.375rem;
+}
+
+.card {
+  background-color: white;
+  border-radius: 1rem;
+  border: 1px solid rgb(21 18 37 / 0.1);
+  box-shadow: 0 1px 2px rgb(21 18 37 / 0.04);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--color-violet);
+}
+
+.stub-divider {
+  position: relative;
+  border-left: 2px dashed rgb(21 18 37 / 0.18);
+}
+
+.stub-divider::before,
+.stub-divider::after {
+  content: "";
+  position: absolute;
+  left: -10px;
+  width: 20px;
+  height: 20px;
+  background: var(--notch-bg, #FAF7F1);
+  border-radius: 9999px;
+}
+
+.stub-divider::before {
+  top: -10px;
+}
+
+.stub-divider::after {
+  bottom: -10px;
+}
