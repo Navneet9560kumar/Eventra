@@ -21,6 +21,10 @@ Pillow
 email-validator
 itsdangerous
 
+factory-boy
+faker
+pytest
+pytest-asyncio
 
 
 

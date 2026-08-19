@@ -7,7 +7,7 @@ from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
 
 
-# 1. Base Class (Yeh missing thi file mein)
+
 class Base(DeclarativeBase):
     pass
 
