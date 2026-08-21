@@ -16,9 +16,10 @@ from app.db.session import get_db
 from app.moduels.user import User, RoleEnum
 from app.schemas.users_schema import UserRegister, Userlogin, UserOut, Token
 from app.dependencies import get_current_user
-from app.core.config import settings
+from fastapi.responses import RedirectResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth = OAuth()
@@ -45,11 +46,15 @@ def create_access_token(user_id: int, role: str) -> str:
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
+@router.get("/me", response_model=UserOut)
+async def get_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
 
 @router.put("/me/profile-image", response_model=UserOut)
-async def uplode_profile_image(
-    image:UploadFile = File(...),
-    current_user:User = Depends(get_current_user),
+async def upload_profile_image(
+    image: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
@@ -59,7 +64,7 @@ async def uplode_profile_image(
     with open(filepath, "wb") as f:
         f.write(await image.read())
 
-    current_user.profile_image_url = f"{settings.MEDIA_URL}/{filename}"
+    current_user.profile_image_url = f"{settings.PUBLIC_BASE_URL}{settings.MEDIA_URL}/{filename}"
     await db.commit()
     await db.refresh(current_user)
     return current_user
@@ -101,7 +106,7 @@ async def google_login(request: Request):
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
-@router.get("/google/callback", response_model=Token)
+@router.get("/google/callback")
 async def google_callback(request: Request, db: AsyncSession = Depends(get_db)):
     token = await oauth.google.authorize_access_token(request)
     userinfo = token["userinfo"]
@@ -121,4 +126,6 @@ async def google_callback(request: Request, db: AsyncSession = Depends(get_db)):
         await db.refresh(user)
 
     jwt_token = create_access_token(user.id, user.role.value)
-    return Token(access_token=jwt_token)
+
+    frontend_url = f"http://localhost:5173/login?access_token={jwt_token}"
+    return RedirectResponse(frontend_url)
